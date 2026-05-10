@@ -1,0 +1,12 @@
+webhook:
+  retry:
+    max-attempts: 3
+    initial-interval: 50ms   # fast retries in tests
+    multiplier: 1.5
+    max-interval: 200ms
+  circuit-breaker:
+    minimum-number-of-calls: 100  # keep circuit closed during isolated tests
+  async:
+    core-pool-size: 2
+    max-pool-size: 4
+    queue-capacity: 100
