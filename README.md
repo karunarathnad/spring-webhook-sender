@@ -75,35 +75,37 @@ The `X-Webhook-Signature` header is set to `sha256=<hmac>` using the endpoint se
 
 ## Configuration
 
-All settings are optional. The defaults below work for most cases.
+All settings are optional. The library ships with sensible defaults baked in, so no configuration is required to get started.
+
+If you want to override any value, add a `webhook` block to your own application's `application.yml`:
 
 ```yaml
 webhook:
   http:
-    connect-timeout: 5s
-    read-timeout: 10s
+    connect-timeout: 5s      # default 5s
+    read-timeout: 10s        # default 10s
 
   retry:
-    max-attempts: 3        # total attempts including the first; set to 1 to disable
-    initial-interval: 1s   # wait before the 2nd attempt
-    multiplier: 2.0        # wait doubles each retry (1s → 2s → 4s ...)
-    max-interval: 30s      # upper cap on wait between retries
+    max-attempts: 3          # total attempts including the first; set to 1 to disable. default 3
+    initial-interval: 1s     # wait before the 2nd attempt. default 1s
+    multiplier: 2.0          # wait doubles each retry (1s to 2s to 4s ...). default 2.0
+    max-interval: 30s        # upper cap on wait between retries. default 30s
 
   circuit-breaker:
-    failure-rate-threshold: 50            # open circuit when this % of calls fail
-    minimum-number-of-calls: 10           # don't evaluate rate until this many calls
-    sliding-window-size: 20
-    wait-duration-in-open-state: 30s
-    permitted-calls-in-half-open-state: 3
+    failure-rate-threshold: 50            # open circuit when this % of calls fail. default 50
+    minimum-number-of-calls: 10           # don't evaluate rate until this many calls. default 10
+    sliding-window-size: 20               # default 20
+    wait-duration-in-open-state: 30s      # default 30s
+    permitted-calls-in-half-open-state: 3 # default 3
 
   async:
-    core-pool-size: 4
-    max-pool-size: 16
-    queue-capacity: 1000   # events waiting for a thread; new events rejected when full
-    keep-alive: 60s
+    core-pool-size: 4        # default 4
+    max-pool-size: 16        # default 16
+    queue-capacity: 1000     # events waiting for a thread; new events rejected when full. default 1000
+    keep-alive: 60s          # default 60s
 ```
 
-5xx responses and network errors are retried. 4xx responses are not retried and do not count toward the circuit-breaker failure rate.
+5xx responses and network errors are retried. 4xx responses are not retried and do not count toward the circuit breaker failure rate.
 
 ## Extending
 
