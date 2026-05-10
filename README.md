@@ -1,5 +1,7 @@
 # spring-webhook-sender
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.karunarathnad/spring-webhook-sender)](https://central.sonatype.com/artifact/io.github.karunarathnad/spring-webhook-sender)
+
 A lightweight Spring Boot 3.x library that makes it easy to send outgoing webhooks from your application. Drop it in as a dependency, inject `WebhookClient`, and fire events. The library takes care of the rest.
 
 Under the hood it handles HMAC-SHA256 request signing, automatic retry with exponential backoff, per-endpoint circuit breaking, non-blocking async dispatch, and audit logging. Everything is wired up automatically via Spring Boot auto-configuration and tunable through `application.yml` with sensible defaults.
