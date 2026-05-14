@@ -4,7 +4,18 @@
 
 A lightweight Spring Boot 3.x library for sending outgoing webhooks. Drop it in as a dependency, inject `WebhookClient`, and fire events. The library takes care of the rest.
 
-**Features:** HMAC-SHA256 signing · exponential-backoff retry · HTTP 429/Retry-After handling · per-endpoint circuit breaking · payload size validation · event-type subscription filtering · delivery lifecycle callbacks · secret generation and rotation · non-blocking async dispatch · structured audit logging.
+**Features:** 
+
+- HMAC-SHA256 signing
+- exponential-backoff retry
+- HTTP 429/Retry-After handling
+- per-endpoint circuit breaking
+- payload size validation
+- event-type subscription filtering
+- delivery lifecycle callbacks
+- secret generation and rotation
+- non-blocking async dispatch
+- structured audit logging.
 
 Everything is wired up automatically via Spring Boot auto-configuration and tunable through `application.yml`.
 
@@ -99,13 +110,13 @@ Skipped events return a `WebhookDeliveryResult` with `result.skipped() == true` 
 
 5xx responses and network errors are retried with exponential backoff. 4xx responses are **not** retried, except for **429 Too Many Requests**, which is retried and respects the `Retry-After` header.
 
-| Response | Retried | Circuit breaker |
-|----------|---------|-----------------|
-| 2xx      | —       | counts as success |
+| Response | Retried                  | Circuit breaker |
+|----------|--------------------------|-----------------|
+| 2xx      | -                        | counts as success |
 | 429      | Yes (honors Retry-After) | not counted as failure |
-| 4xx      | No      | not counted as failure |
-| 5xx      | Yes     | counts as failure |
-| Network error | Yes | counts as failure |
+| 4xx      | No                       | not counted as failure |
+| 5xx      | Yes                      | counts as failure |
+| Network error | Yes                      | counts as failure |
 
 When a 429 response includes a `Retry-After` header (seconds or HTTP-date), the retry waits at least that long, capped at `webhook.retry.max-interval`.
 
@@ -132,7 +143,7 @@ Secrets are prefixed with `whsec_` and backed by 32 bytes of `SecureRandom`. Ove
 
 ## Delivery lifecycle callbacks
 
-Implement `WebhookDeliveryListener` to react to final delivery outcomes — hook in your own alerting, metrics, or dead-letter logic:
+Implement `WebhookDeliveryListener` to react to final delivery outcomes - hook in your own alerting, metrics, or dead-letter logic:
 
 ```java
 @Bean
@@ -248,7 +259,7 @@ boolean valid = MessageDigest.isEqual(expected.getBytes(UTF_8), received.getByte
 
 ## Migrating from 1.x to 2.0
 
-`WebhookEndpoint` gained a new `subscribedEventTypes` field. This changes the record's canonical constructor — a binary-incompatible change.
+`WebhookEndpoint` gained a new `subscribedEventTypes` field. This changes the record's canonical constructor - a binary-incompatible change.
 
 **Builder API is unchanged.** Any code using `WebhookEndpoint.builder()` compiles and runs without modification. The new field defaults to an empty set (subscribe to all events), so existing behaviour is preserved.
 
