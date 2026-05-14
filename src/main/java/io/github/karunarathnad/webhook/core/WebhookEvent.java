@@ -1,11 +1,14 @@
 package io.github.karunarathnad.webhook.core;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record WebhookEvent(
         String eventId,
         String eventType,

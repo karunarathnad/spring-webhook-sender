@@ -6,7 +6,11 @@ import io.github.karunarathnad.webhook.audit.Slf4jAuditLogger;
 import io.github.karunarathnad.webhook.config.WebhookProperties;
 import io.github.karunarathnad.webhook.core.DefaultWebhookClient;
 import io.github.karunarathnad.webhook.core.WebhookClient;
+import io.github.karunarathnad.webhook.delivery.LoggingWebhookDeliveryListener;
+import io.github.karunarathnad.webhook.delivery.WebhookDeliveryListener;
 import io.github.karunarathnad.webhook.http.WebhookHttpSender;
+import io.github.karunarathnad.webhook.secret.DefaultWebhookSecretManager;
+import io.github.karunarathnad.webhook.secret.WebhookSecretManager;
 import io.github.karunarathnad.webhook.signature.HmacSha256SignatureStrategy;
 import io.github.karunarathnad.webhook.signature.SignatureStrategy;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +41,18 @@ public class WebhookAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    public WebhookDeliveryListener webhookDeliveryListener() {
+        return new LoggingWebhookDeliveryListener();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public WebhookSecretManager webhookSecretManager() {
+        return new DefaultWebhookSecretManager();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(name = "webhookObjectMapper")
     public ObjectMapper webhookObjectMapper() {
         return new ObjectMapper()
@@ -61,12 +77,14 @@ public class WebhookAutoConfiguration {
                                                 SignatureStrategy webhookSignatureStrategy,
                                                 ObjectMapper webhookObjectMapper,
                                                 AuditLogger webhookAuditLogger,
+                                                WebhookDeliveryListener webhookDeliveryListener,
                                                 WebhookProperties properties) {
         return new WebhookHttpSender(
                 webhookRestClient,
                 webhookSignatureStrategy,
                 webhookObjectMapper,
                 webhookAuditLogger,
+                webhookDeliveryListener,
                 properties);
     }
 

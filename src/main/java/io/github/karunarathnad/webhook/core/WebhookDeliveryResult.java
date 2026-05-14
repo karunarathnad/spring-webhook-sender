@@ -8,6 +8,7 @@ public record WebhookDeliveryResult(
         String endpointId,
         int httpStatusCode,
         boolean success,
+        boolean skipped,
         String errorMessage,
         int totalAttempts,
         Duration totalDuration,
@@ -16,13 +17,18 @@ public record WebhookDeliveryResult(
     public static WebhookDeliveryResult success(String eventId, String endpointId,
                                                  int httpStatus, int attempts, Duration duration) {
         return new WebhookDeliveryResult(
-                eventId, endpointId, httpStatus, true, null, attempts, duration, Instant.now());
+                eventId, endpointId, httpStatus, true, false, null, attempts, duration, Instant.now());
     }
 
     public static WebhookDeliveryResult failure(String eventId, String endpointId,
                                                  int httpStatus, String errorMessage,
                                                  int attempts, Duration duration) {
         return new WebhookDeliveryResult(
-                eventId, endpointId, httpStatus, false, errorMessage, attempts, duration, Instant.now());
+                eventId, endpointId, httpStatus, false, false, errorMessage, attempts, duration, Instant.now());
+    }
+
+    public static WebhookDeliveryResult skipped(String eventId, String endpointId, String reason) {
+        return new WebhookDeliveryResult(
+                eventId, endpointId, 0, false, true, reason, 0, Duration.ZERO, Instant.now());
     }
 }

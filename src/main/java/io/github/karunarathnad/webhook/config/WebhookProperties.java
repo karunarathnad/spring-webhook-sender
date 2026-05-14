@@ -11,11 +11,14 @@ public class WebhookProperties {
     private final Retry retry = new Retry();
     private final CircuitBreaker circuitBreaker = new CircuitBreaker();
     private final Http http = new Http();
+    private int maxPayloadSizeBytes = 262144; // 256 KB
 
     public Async getAsync() { return async; }
     public Retry getRetry() { return retry; }
     public CircuitBreaker getCircuitBreaker() { return circuitBreaker; }
     public Http getHttp() { return http; }
+    public int getMaxPayloadSizeBytes() { return maxPayloadSizeBytes; }
+    public void setMaxPayloadSizeBytes(int maxPayloadSizeBytes) { this.maxPayloadSizeBytes = maxPayloadSizeBytes; }
 
     public static class Async {
         private int corePoolSize = 4;
