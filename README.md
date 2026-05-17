@@ -12,6 +12,7 @@ A lightweight Spring Boot 3.x library for sending outgoing webhooks. Drop it in 
 - per-endpoint circuit breaking
 - payload size validation
 - event-type subscription filtering
+- per-endpoint custom headers
 - delivery lifecycle callbacks
 - secret generation and rotation
 - non-blocking async dispatch
@@ -30,7 +31,7 @@ Everything is wired up automatically via Spring Boot auto-configuration and tuna
 <dependency>
     <groupId>io.github.karunarathnad</groupId>
     <artifactId>spring-webhook-sender</artifactId>
-    <version>2.0.1</version>
+    <version>2.1.0</version>
 </dependency>
 ```
 
@@ -103,6 +104,30 @@ WebhookEndpoint endpoint = WebhookEndpoint.builder()
 An empty `subscribedEventTypes` (the default) means the endpoint receives all events.
 
 Skipped events return a `WebhookDeliveryResult` with `result.skipped() == true` and `result.success() == false`. No HTTP call is made and no retry is attempted.
+
+---
+
+## Per-endpoint custom headers
+
+Pass additional HTTP headers on every request sent to a specific endpoint. Useful for consumer-required identifiers such as a tenant ID, source system tag, or any other static metadata the receiving service expects.
+
+```java
+WebhookEndpoint endpoint = WebhookEndpoint.builder()
+        .id("billing-service")
+        .targetUrl("https://billing.example.com/hooks")
+        .secret(System.getenv("BILLING_WEBHOOK_SECRET"))
+        .header("X-Tenant-ID", "acme-corp")
+        .header("X-Source-System", "order-service")
+        .build();
+```
+
+Headers are passed through to the consumer as-is. The following headers are managed by the library and **cannot be overridden**; an `IllegalArgumentException` is thrown at build time if you attempt to set them:
+
+| Header | Managed by |
+|---|---|
+| `Content-Type` | Library (always `application/json`) |
+| `Accept` | Library (always `application/json`) |
+| `X-Webhook-Signature` | Library (HMAC-SHA256 signing) |
 
 ---
 
@@ -259,13 +284,13 @@ boolean valid = MessageDigest.isEqual(expected.getBytes(UTF_8), received.getByte
 
 ## Migrating from 1.x to 2.0
 
-`WebhookEndpoint` gained a new `subscribedEventTypes` field. This changes the record's canonical constructor - a binary-incompatible change.
+`WebhookEndpoint` gained two new fields across the 2.x line (`subscribedEventTypes` in 2.0.0, `headers` in 2.0.1). These change the record's canonical constructor — a binary-incompatible change.
 
-**Builder API is unchanged.** Any code using `WebhookEndpoint.builder()` compiles and runs without modification. The new field defaults to an empty set (subscribe to all events), so existing behaviour is preserved.
+**Builder API is unchanged.** Any code using `WebhookEndpoint.builder()` compiles and runs without modification. Both new fields default to empty collections, so existing behaviour is fully preserved.
 
-Only code calling `new WebhookEndpoint(id, targetUrl, secret)` directly needs to add the fourth argument or switch to the builder.
+Only code calling `new WebhookEndpoint(...)` directly needs to add the missing arguments or switch to the builder.
 
-`WebhookDeliveryResult` also gained a `skipped` field. Existing call sites using the `success()` / `failure()` factory methods are unaffected.
+`WebhookDeliveryResult` also gained a `skipped` field in 2.0.0. Existing call sites using the `success()` / `failure()` factory methods are unaffected.
 
 ---
 

@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -122,6 +123,10 @@ public class WebhookHttpSender {
                     .contentType(MediaType.APPLICATION_JSON)
                     .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                     .body(body);
+
+            for (Map.Entry<String, String> entry : endpoint.headers().entrySet()) {
+                request = request.header(entry.getKey(), entry.getValue());
+            }
 
             if (signature != null) {
                 request = request.header(signatureStrategy.headerName(), signature);

@@ -2,7 +2,9 @@ package io.github.karunarathnad.webhook.core;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -35,12 +37,16 @@ public record WebhookEndpoint(
         String id,
         String targetUrl,
         String secret,
-        Set<String> subscribedEventTypes
+        Set<String> subscribedEventTypes,
+        Map<String, String> headers
 ) {
+    private static final Set<String> RESERVED_HEADERS = Set.of("content-type", "accept", "x-webhook-signature");
+
     public WebhookEndpoint {
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(targetUrl, "targetUrl must not be null");
         subscribedEventTypes = subscribedEventTypes != null ? Set.copyOf(subscribedEventTypes) : Set.of();
+        headers = headers != null ? Map.copyOf(headers) : Map.of();
     }
 
     /**
@@ -60,6 +66,7 @@ public record WebhookEndpoint(
         private String targetUrl;
         private String secret;
         private final Set<String> subscribedEventTypes = new HashSet<>();
+        private final Map<String, String> headers = new HashMap<>();
 
         private Builder() {}
 
@@ -140,6 +147,33 @@ public record WebhookEndpoint(
         }
 
         /**
+         * Adds a single custom HTTP header to every request sent to this endpoint.
+         *
+         * <p>Headers are passed through to the consumer as-is. The following headers are
+         * managed by the library and cannot be overridden:
+         * <ul>
+         *   <li>{@code Content-Type}</li>
+         *   <li>{@code Accept}</li>
+         *   <li>{@code X-Webhook-Signature} (set by the configured {@link io.github.karunarathnad.webhook.signature.SignatureStrategy})</li>
+         * </ul>
+         *
+         * @param key   the header name; must not be {@code null}
+         * @param value the header value; must not be {@code null}
+         * @return this builder
+         * @throws IllegalArgumentException if the header name is reserved by the library
+         */
+        public Builder header(String key, String value) {
+            Objects.requireNonNull(key, "header key must not be null");
+            Objects.requireNonNull(value, "header value must not be null");
+            if (RESERVED_HEADERS.contains(key.toLowerCase())) {
+                throw new IllegalArgumentException(
+                        "Header '" + key + "' is managed by the library and cannot be overridden");
+            }
+            this.headers.put(key, value);
+            return this;
+        }
+
+        /**
          * Constructs the {@link WebhookEndpoint}.
          *
          * @return a new, immutable endpoint
@@ -148,7 +182,7 @@ public record WebhookEndpoint(
         public WebhookEndpoint build() {
             Objects.requireNonNull(id, "id is required");
             Objects.requireNonNull(targetUrl, "targetUrl is required");
-            return new WebhookEndpoint(id, targetUrl, secret, subscribedEventTypes);
+            return new WebhookEndpoint(id, targetUrl, secret, subscribedEventTypes, headers);
         }
     }
 }
