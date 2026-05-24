@@ -22,7 +22,7 @@ Everything is wired up automatically via Spring Boot auto-configuration and tuna
 
 ## Requirements
 
-- Java 17+
+- Java 21+
 - Spring Boot 3.2+
 
 ## Installation
