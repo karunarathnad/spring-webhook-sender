@@ -1,6 +1,9 @@
 # spring-webhook-sender
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.karunarathnad/spring-webhook-sender)](https://central.sonatype.com/artifact/io.github.karunarathnad/spring-webhook-sender)
+[![CI](https://github.com/karunarathnad/spring-webhook-sender/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/karunarathnad/spring-webhook-sender/actions/workflows/ci.yml)
+[![Java 21+](https://img.shields.io/badge/Java-21%2B-blue.svg)](https://openjdk.org/projects/jdk/21/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-green.svg)](LICENSE)
 
 A lightweight Spring Boot 3.x library for sending outgoing webhooks. Drop it in as a dependency, inject `WebhookClient`, and fire events. The library takes care of the rest.
 
@@ -300,4 +303,4 @@ Dinuka Karunarathna — [github.com/karunarathnad](https://github.com/karunarath
 
 ## License
 
-MIT
+Apache 2.0
