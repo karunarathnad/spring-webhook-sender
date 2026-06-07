@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: webhook-example
+
+server:
+  port: 8080
+
+# ── spring-webhook-sender configuration ──────────────────────────────────────
+webhook:
+  http:
+    connect-timeout: 5s
+    read-timeout: 10s
+
+  retry:
+    max-attempts: 3          # total attempts (1 initial + 2 retries)
+    initial-interval: 1s
+    multiplier: 2.0          # 1s → 2s → 4s backoff
+    max-interval: 30s
+
+  circuit-breaker:
+    failure-rate-threshold: 50        # open after 50 % failures
+    minimum-number-of-calls: 5
+    sliding-window-size: 10
+    wait-duration-in-open-state: 30s
+
+  async:
+    core-pool-size: 4
+    max-pool-size: 16
+    queue-capacity: 500
+
+# ── logging ───────────────────────────────────────────────────────────────────
+logging:
+  level:
+    io.github.karunarathnad.webhook: DEBUG   # library internals
+    webhook.audit: INFO                       # structured per-attempt audit log
+    io.github.karunarathnad.webhook.example: INFO
