@@ -72,6 +72,19 @@ public class OrderService {
 }
 ```
 
+## Example application
+
+A complete, runnable Spring Boot app that demonstrates every major feature is in the [`example/`](example/README.md) directory. It covers signed/unsigned endpoints, event-type filtering, custom headers, blocking vs. async delivery, and a custom delivery listener — all wired together through a simple order-management REST API.
+
+```bash
+cd example
+mvn spring-boot:run
+```
+
+See [`example/README.md`](example/README.md) for the full walkthrough and curl commands.
+
+---
+
 ### Payload format
 
 ```json
