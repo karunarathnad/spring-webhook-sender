@@ -39,19 +39,25 @@ public class DefaultWebhookSecretManager implements WebhookSecretManager {
     /**
      * Returns a copy of the endpoint with a newly generated secret.
      *
-     * <p>The {@code id}, {@code targetUrl}, and {@code subscribedEventTypes} fields are
-     * carried over unchanged. The original endpoint instance is not modified.
+     * <p>The {@code id}, {@code targetUrl}, {@code subscribedEventTypes}, and {@code headers}
+     * fields are carried over unchanged. The original endpoint instance is not modified.
      *
      * @param endpoint the endpoint to rotate; must not be {@code null}
      * @return a new endpoint with a fresh secret
      */
     @Override
     public WebhookEndpoint rotateSecret(WebhookEndpoint endpoint) {
-        return WebhookEndpoint.builder()
+        var builder = WebhookEndpoint.builder()
                 .id(endpoint.id())
                 .targetUrl(endpoint.targetUrl())
                 .subscribedEventTypes(endpoint.subscribedEventTypes())
-                .secret(generateSecret())
-                .build();
+                .secret(generateSecret());
+        
+        // Copy custom headers from the original endpoint
+        for (var entry : endpoint.headers().entrySet()) {
+            builder = builder.header(entry.getKey(), entry.getValue());
+        }
+        
+        return builder.build();
     }
 }
