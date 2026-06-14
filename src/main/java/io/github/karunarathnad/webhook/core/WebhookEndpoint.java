@@ -128,6 +128,7 @@ public record WebhookEndpoint(
          * @return this builder
          */
         public Builder subscribedEventTypes(Set<String> eventTypes) {
+            this.subscribedEventTypes.clear();
             this.subscribedEventTypes.addAll(eventTypes);
             return this;
         }
