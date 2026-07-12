@@ -70,10 +70,6 @@ public class WebhookHttpSender {
         AtomicInteger attemptCounter = new AtomicInteger(0);
         Instant start = Instant.now();
 
-        retry.getEventPublisher().onRetry(e ->
-                log.debug("Retrying webhook eventId={} endpointId={} attempt={}",
-                        event.eventId(), endpoint.id(), e.getNumberOfRetryAttempts() + 1));
-
         Callable<WebhookDeliveryResult> decorated =
                 CircuitBreaker.decorateCallable(cb,
                         Retry.decorateCallable(retry,
@@ -103,6 +99,10 @@ public class WebhookHttpSender {
 
     private WebhookDeliveryResult doSend(WebhookEvent event, WebhookEndpoint endpoint, int attempt) {
         Instant start = Instant.now();
+        if (attempt > 1) {
+            log.debug("Retrying webhook eventId={} endpointId={} attempt={}",
+                    event.eventId(), endpoint.id(), attempt);
+        }
         String body;
         try {
             body = objectMapper.writeValueAsString(event);
