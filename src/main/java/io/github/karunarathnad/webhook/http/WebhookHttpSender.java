@@ -168,7 +168,7 @@ public class WebhookHttpSender {
         }
     }
 
-    private static long parseRetryAfter(String header) {
+    static long parseRetryAfter(String header) {
         if (header == null || header.isBlank()) return 0;
         try {
             return Long.parseLong(header.trim()) * 1000L;
