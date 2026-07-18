@@ -65,7 +65,8 @@ public class WebhookAutoConfiguration {
     public RestClient webhookRestClient(WebhookProperties properties) {
         HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
         factory.setConnectTimeout((int) properties.getHttp().getConnectTimeout().toMillis());
-        factory.setConnectionRequestTimeout((int) properties.getHttp().getReadTimeout().toMillis());
+        factory.setConnectionRequestTimeout((int) properties.getHttp().getConnectTimeout().toMillis());
+        factory.setReadTimeout((int) properties.getHttp().getReadTimeout().toMillis());
         return RestClient.builder()
                 .requestFactory(factory)
                 .build();
