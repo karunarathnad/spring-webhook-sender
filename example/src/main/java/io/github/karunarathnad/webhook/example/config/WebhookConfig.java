@@ -4,7 +4,6 @@ import io.github.karunarathnad.webhook.core.WebhookEndpoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Map;
 import java.util.Set;
 
 @Configuration
@@ -34,10 +33,8 @@ public class WebhookConfig {
                 .id("analytics-endpoint")
                 .targetUrl("http://localhost:8080/receive/webhooks")
                 .subscribedEventTypes(Set.of("order.created"))
-                .headers(Map.of(
-                        "X-Api-Key", "analytics-api-key-xyz",
-                        "X-Source", "order-service"
-                ))
+                .header("X-Api-Key", "analytics-api-key-xyz")
+                .header("X-Source", "order-service")
                 .build();
     }
 }
