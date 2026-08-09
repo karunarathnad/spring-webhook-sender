@@ -3,11 +3,13 @@ package io.github.karunarathnad.webhook.async;
 import io.github.karunarathnad.webhook.core.WebhookDeliveryResult;
 import io.github.karunarathnad.webhook.core.WebhookEndpoint;
 import io.github.karunarathnad.webhook.core.WebhookEvent;
+import io.github.karunarathnad.webhook.delivery.WebhookDeliveryListener;
 import io.github.karunarathnad.webhook.http.WebhookHttpSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -17,10 +19,13 @@ public class AsyncWebhookDispatcher {
 
     private final ThreadPoolTaskExecutor executor;
     private final WebhookHttpSender httpSender;
+    private final WebhookDeliveryListener deliveryListener;
 
-    public AsyncWebhookDispatcher(ThreadPoolTaskExecutor executor, WebhookHttpSender httpSender) {
+    public AsyncWebhookDispatcher(ThreadPoolTaskExecutor executor, WebhookHttpSender httpSender,
+                                   WebhookDeliveryListener deliveryListener) {
         this.executor = executor;
         this.httpSender = httpSender;
+        this.deliveryListener = deliveryListener;
     }
 
     public CompletableFuture<WebhookDeliveryResult> dispatch(WebhookEvent event, WebhookEndpoint endpoint) {
@@ -33,7 +38,17 @@ public class AsyncWebhookDispatcher {
         } catch (RejectedExecutionException e) {
             log.error("Webhook queue full — event dropped eventId={} endpointId={}",
                     event.eventId(), endpoint.id());
-            return CompletableFuture.failedFuture(e);
+            // WebhookClient#send/#sendAsync are documented to never throw — always resolve
+            // to a WebhookDeliveryResult, even when the event never made it past the queue.
+            WebhookDeliveryResult result = WebhookDeliveryResult.failure(
+                    event.eventId(), endpoint.id(), -1,
+                    "Webhook queue full — event dropped", 0, Duration.ZERO);
+            try {
+                deliveryListener.onPermanentFailure(event, endpoint, result);
+            } catch (Exception listenerEx) {
+                log.warn("webhookDeliveryListener callback threw an exception", listenerEx);
+            }
+            return CompletableFuture.completedFuture(result);
         }
     }
 
