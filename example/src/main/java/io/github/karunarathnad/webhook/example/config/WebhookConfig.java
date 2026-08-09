@@ -1,6 +1,7 @@
 package io.github.karunarathnad.webhook.example.config;
 
 import io.github.karunarathnad.webhook.core.WebhookEndpoint;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,14 +12,15 @@ public class WebhookConfig {
 
     /**
      * Primary endpoint — receives all order events, signed with HMAC-SHA256.
-     * The receiver validates the X-Webhook-Signature header on the other side.
+     * The receiver validates the X-Webhook-Signature header on the other side using the
+     * same {@code example.webhook-secret} property (see WebhookReceiverController).
      */
     @Bean
-    public WebhookEndpoint primaryEndpoint() {
+    public WebhookEndpoint primaryEndpoint(@Value("${example.webhook-secret}") String webhookSecret) {
         return WebhookEndpoint.builder()
                 .id("primary-endpoint")
                 .targetUrl("http://localhost:8080/receive/webhooks")
-                .secret("whsec_example-secret-key-replace-in-production")
+                .secret(webhookSecret)
                 .subscribedEventTypes(Set.of("order.created", "order.updated", "order.cancelled"))
                 .build();
     }

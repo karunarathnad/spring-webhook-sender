@@ -5,6 +5,12 @@ spring:
 server:
   port: 8080
 
+# Shared HMAC secret for the primary endpoint — used both to sign outgoing requests
+# (WebhookConfig) and to verify them on receipt (WebhookReceiverController). In a real
+# deployment this would come from a secret store, not application.yml.
+example:
+  webhook-secret: whsec_example-secret-key-replace-in-production
+
 # ── spring-webhook-sender configuration ──────────────────────────────────────
 webhook:
   http:
