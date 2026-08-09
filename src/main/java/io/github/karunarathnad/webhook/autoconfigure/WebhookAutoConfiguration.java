@@ -16,6 +16,8 @@ import io.github.karunarathnad.webhook.signature.SignatureStrategy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -60,10 +62,22 @@ public class WebhookAutoConfiguration {
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
+    @Bean(destroyMethod = "close")
+    @ConditionalOnMissingBean(name = "webhookHttpClient")
+    public CloseableHttpClient webhookHttpClient() {
+        // Resilience4j's Retry (see WebhookHttpSender) already owns all retry decisions,
+        // including 429/Retry-After handling. Apache HttpClient5 retries 429/503
+        // responses on its own by default, which would silently double the number of
+        // HTTP round trips per logical attempt and double-apply the Retry-After wait.
+        return HttpClients.custom()
+                .disableAutomaticRetries()
+                .build();
+    }
+
     @Bean
     @ConditionalOnMissingBean(name = "webhookRestClient")
-    public RestClient webhookRestClient(WebhookProperties properties) {
-        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+    public RestClient webhookRestClient(WebhookProperties properties, CloseableHttpClient webhookHttpClient) {
+        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(webhookHttpClient);
         factory.setConnectTimeout((int) properties.getHttp().getConnectTimeout().toMillis());
         factory.setConnectionRequestTimeout((int) properties.getHttp().getConnectTimeout().toMillis());
         factory.setReadTimeout((int) properties.getHttp().getReadTimeout().toMillis());
@@ -92,6 +106,7 @@ public class WebhookAutoConfiguration {
     @Bean(destroyMethod = "shutdown")
     @ConditionalOnMissingBean
     public AsyncWebhookDispatcher asyncWebhookDispatcher(WebhookHttpSender webhookHttpSender,
+                                                          WebhookDeliveryListener webhookDeliveryListener,
                                                           WebhookProperties properties) {
         WebhookProperties.Async cfg = properties.getAsync();
 
@@ -105,7 +120,7 @@ public class WebhookAutoConfiguration {
         executor.setAwaitTerminationSeconds(30);
         executor.initialize();
 
-        return new AsyncWebhookDispatcher(executor, webhookHttpSender);
+        return new AsyncWebhookDispatcher(executor, webhookHttpSender, webhookDeliveryListener);
     }
 
     @Bean
