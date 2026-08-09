@@ -47,6 +47,16 @@ public record WebhookEndpoint(
         Objects.requireNonNull(targetUrl, "targetUrl must not be null");
         subscribedEventTypes = subscribedEventTypes != null ? Set.copyOf(subscribedEventTypes) : Set.of();
         headers = headers != null ? Map.copyOf(headers) : Map.of();
+
+        // Enforced here (not just in Builder.header()/headers()) so the guarantee holds
+        // even for endpoints constructed directly or deserialised from JSON, bypassing
+        // the builder entirely.
+        for (String key : headers.keySet()) {
+            if (RESERVED_HEADERS.contains(key.toLowerCase())) {
+                throw new IllegalArgumentException(
+                        "Header '" + key + "' is managed by the library and cannot be overridden");
+            }
+        }
     }
 
     /**
@@ -128,6 +138,7 @@ public record WebhookEndpoint(
          * @return this builder
          */
         public Builder subscribedEventTypes(Set<String> eventTypes) {
+            Objects.requireNonNull(eventTypes, "eventTypes must not be null");
             this.subscribedEventTypes.clear();
             this.subscribedEventTypes.addAll(eventTypes);
             return this;
@@ -171,6 +182,25 @@ public record WebhookEndpoint(
                         "Header '" + key + "' is managed by the library and cannot be overridden");
             }
             this.headers.put(key, value);
+            return this;
+        }
+
+        /**
+         * Sets the custom HTTP headers for this endpoint in bulk, replacing any
+         * previously added headers.
+         *
+         * <p>Equivalent to calling {@link #header(String, String)} once per entry after
+         * clearing the previous headers, so the same reserved-header validation applies
+         * to every entry.
+         *
+         * @param headers the headers to set; must not be {@code null}
+         * @return this builder
+         * @throws IllegalArgumentException if any header name is reserved by the library
+         */
+        public Builder headers(Map<String, String> headers) {
+            Objects.requireNonNull(headers, "headers must not be null");
+            this.headers.clear();
+            headers.forEach(this::header);
             return this;
         }
 
