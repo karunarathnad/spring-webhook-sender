@@ -14,7 +14,7 @@ A runnable Spring Boot application that demonstrates every major feature of
 | Event-type subscription filtering | `analyticsEndpoint` bean |
 | Custom delivery listener | `OrderDeliveryListener.java` |
 | Tuning retry, circuit breaker, and thread pool | `application.yml` |
-| Receiving and verifying a signed webhook | `WebhookReceiverController.java` |
+| Receiving and verifying a signed webhook (HMAC-SHA256, constant-time compare, 401 on mismatch) | `WebhookReceiverController.java` |
 
 ## How it works
 
@@ -61,7 +61,16 @@ Watch the console — you will see:
 - The library signing and dispatching to both endpoints
 - `[DELIVERED]` lines from the custom `OrderDeliveryListener`
 - `--- Webhook received ---` with the `X-Webhook-Signature` header printed by the receiver
+- The receiver recomputing the HMAC over the raw body and accepting the request (200) because it matches
 - Per-attempt audit log entries on the `webhook.audit` logger
+
+Both the sender (`WebhookConfig`) and receiver (`WebhookReceiverController`) read the
+same secret from the `example.webhook-secret` property in `application.yml`. Change
+that value (or send a request with a tampered signature) and the receiver responds
+`401 Unauthorized` and logs `Signature mismatch — rejecting request` instead of
+silently accepting it. The unsigned analytics endpoint has no signature header at all,
+so the receiver skips verification for it, as documented in the main
+[README's signature section](../README.md#verifying-the-signature-on-the-receiving-side).
 
 ### 2 — Update order status (triggers `order.updated`, analytics endpoint skips it)
 
@@ -90,7 +99,7 @@ WebhookEndpoint endpoint = WebhookEndpoint.builder()
     .targetUrl("https://example.com/hooks")
     .secret("whsec_…")                          // omit for unsigned delivery
     .subscribedEventTypes(Set.of("order.created")) // omit to receive all types
-    .headers(Map.of("X-Api-Key", "key-xyz"))    // custom headers (optional)
+    .headers(Map.of("X-Api-Key", "key-xyz"))    // custom headers (optional), or .header(k, v) one at a time
     .build();
 ```
 

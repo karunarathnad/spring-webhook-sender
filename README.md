@@ -137,6 +137,8 @@ WebhookEndpoint endpoint = WebhookEndpoint.builder()
         .build();
 ```
 
+Or set them all at once with `.headers(Map.of("X-Tenant-ID", "acme-corp", "X-Source-System", "order-service"))`, which replaces any headers added so far. `.header(key, value)` calls after `.headers(map)` still accumulate on top of it.
+
 Headers are passed through to the consumer as-is. The following headers are managed by the library and **cannot be overridden**; an `IllegalArgumentException` is thrown at build time if you attempt to set them:
 
 | Header | Managed by |
