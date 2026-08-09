@@ -8,10 +8,6 @@ import io.github.karunarathnad.webhook.delivery.LoggingWebhookDeliveryListener;
 import io.github.karunarathnad.webhook.http.WebhookHttpSender;
 import io.github.karunarathnad.webhook.signature.HmacSha256SignatureStrategy;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -19,9 +15,9 @@ import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -32,28 +28,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code CompletionException} — violating {@code WebhookClient}'s documented contract
  * that {@code send}/{@code sendAsync} never throw and always resolve to a
  * {@link WebhookDeliveryResult}.
+ *
+ * <p>The pool's only worker thread is occupied deterministically via a latch (not a
+ * fixed sleep racing a real HTTP call), so the rejection is guaranteed rather than
+ * timing-dependent. The rejected call never reaches HTTP at all, so no WireMock server
+ * is needed here.
  */
 class AsyncWebhookDispatcherQueueFullTest {
 
-    static WireMockServer wireMock;
-
-    @BeforeAll
-    static void startWireMock() {
-        wireMock = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
-        wireMock.start();
-    }
-
-    @AfterAll
-    static void stopWireMock() {
-        wireMock.stop();
-    }
-
     @Test
     void queueFullResolvesToAGracefulFailureInsteadOfThrowing() throws Exception {
-        wireMock.stubFor(post(urlEqualTo("/hooks/slow"))
-                .willReturn(aResponse().withStatus(200).withFixedDelay(500)));
-
-        WebhookProperties properties = new WebhookProperties();
         WebhookHttpSender httpSender = new WebhookHttpSender(
                 RestClient.builder()
                         .requestFactory(new HttpComponentsClientHttpRequestFactory())
@@ -62,7 +46,7 @@ class AsyncWebhookDispatcherQueueFullTest {
                 new ObjectMapper(),
                 record -> { },
                 new LoggingWebhookDeliveryListener(),
-                properties);
+                new WebhookProperties());
 
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(1);
@@ -70,30 +54,43 @@ class AsyncWebhookDispatcherQueueFullTest {
         executor.setQueueCapacity(0);
         executor.initialize();
 
+        CountDownLatch occupierStarted = new CountDownLatch(1);
+        CountDownLatch releaseOccupier = new CountDownLatch(1);
+
+        // Deterministically occupy the pool's single thread, independent of any HTTP
+        // timing: dispatcher.dispatch() below is only guaranteed to be rejected once we
+        // know this task is actually running (not just submitted).
+        executor.execute(() -> {
+            occupierStarted.countDown();
+            try {
+                releaseOccupier.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        assertThat(occupierStarted.await(2, TimeUnit.SECONDS))
+                .as("occupier task should have started running")
+                .isTrue();
+
         AsyncWebhookDispatcher dispatcher =
                 new AsyncWebhookDispatcher(executor, httpSender, new LoggingWebhookDeliveryListener());
-
         WebhookEndpoint endpoint = WebhookEndpoint.builder()
-                .id("slow-endpoint")
-                .targetUrl("http://localhost:" + wireMock.port() + "/hooks/slow")
+                .id("queue-full-endpoint")
+                .targetUrl("http://localhost:1/unused")
                 .build();
         WebhookEvent event = WebhookEvent.builder().eventType("test.event").payload(Map.of()).build();
 
         try {
-            // Occupies the only worker thread for ~500ms.
-            CompletableFuture<WebhookDeliveryResult> first = dispatcher.dispatch(event, endpoint);
-            Thread.sleep(100); // let it actually start running, not just get submitted
+            // The pool is provably busy and the queue has zero capacity, so this must
+            // be rejected — never reaching httpSender.send() at all.
+            CompletableFuture<WebhookDeliveryResult> rejected = dispatcher.dispatch(event, endpoint);
+            WebhookDeliveryResult result = rejected.get(2, TimeUnit.SECONDS);
 
-            // Pool is busy and the queue has zero capacity, so this must be rejected.
-            CompletableFuture<WebhookDeliveryResult> second = dispatcher.dispatch(event, endpoint);
-            WebhookDeliveryResult secondResult = second.get(2, TimeUnit.SECONDS);
-
-            assertThat(secondResult.success()).isFalse();
-            assertThat(secondResult.totalAttempts()).isZero();
-            assertThat(secondResult.errorMessage()).containsIgnoringCase("queue full");
-
-            first.get(2, TimeUnit.SECONDS);
+            assertThat(result.success()).isFalse();
+            assertThat(result.totalAttempts()).isZero();
+            assertThat(result.errorMessage()).containsIgnoringCase("queue full");
         } finally {
+            releaseOccupier.countDown();
             executor.shutdown();
         }
     }
