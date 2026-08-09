@@ -73,10 +73,10 @@ public class WebhookHttpSender {
         Callable<WebhookDeliveryResult> decorated =
                 CircuitBreaker.decorateCallable(cb,
                         Retry.decorateCallable(retry,
-                                () -> doSend(event, endpoint, attemptCounter.incrementAndGet())));
+                                () -> doSend(event, endpoint, attemptCounter.incrementAndGet(), start)));
         try {
             WebhookDeliveryResult result = decorated.call();
-            deliveryListener.onSuccess(event, endpoint, result);
+            notifyListener(() -> deliveryListener.onSuccess(event, endpoint, result));
             return result;
         } catch (WebhookDeliveryException e) {
             Duration elapsed = Duration.between(start, Instant.now());
@@ -84,7 +84,7 @@ public class WebhookHttpSender {
                     event.eventId(), endpoint.id(),
                     e.getHttpStatus(), e.getMessage(),
                     attemptCounter.get(), elapsed);
-            deliveryListener.onPermanentFailure(event, endpoint, result);
+            notifyListener(() -> deliveryListener.onPermanentFailure(event, endpoint, result));
             return result;
         } catch (Exception e) {
             Duration elapsed = Duration.between(start, Instant.now());
@@ -92,12 +92,26 @@ public class WebhookHttpSender {
                     event.eventId(), endpoint.id(),
                     -1, e.getMessage(),
                     attemptCounter.get(), elapsed);
-            deliveryListener.onPermanentFailure(event, endpoint, result);
+            notifyListener(() -> deliveryListener.onPermanentFailure(event, endpoint, result));
             return result;
         }
     }
 
-    private WebhookDeliveryResult doSend(WebhookEvent event, WebhookEndpoint endpoint, int attempt) {
+    /**
+     * Invokes a {@link WebhookDeliveryListener} callback, isolating the already-computed
+     * delivery result from exceptions the listener itself throws. A misbehaving listener
+     * must not turn a successful delivery into a reported failure, nor escape {@link #send}
+     * uncaught.
+     */
+    private void notifyListener(Runnable callback) {
+        try {
+            callback.run();
+        } catch (Exception e) {
+            log.warn("webhookDeliveryListener callback threw an exception", e);
+        }
+    }
+
+    private WebhookDeliveryResult doSend(WebhookEvent event, WebhookEndpoint endpoint, int attempt, Instant overallStart) {
         Instant start = Instant.now();
         if (attempt > 1) {
             log.debug("Retrying webhook eventId={} endpointId={} attempt={}",
@@ -151,11 +165,15 @@ public class WebhookHttpSender {
                     .getStatusCode()
                     .value();
 
-            long durationMs = Duration.between(start, Instant.now()).toMillis();
-            auditLogger.log(WebhookAuditRecord.of(event, endpoint, statusCode, true, null, attempt, durationMs));
+            Instant now = Instant.now();
+            long attemptDurationMs = Duration.between(start, now).toMillis();
+            auditLogger.log(WebhookAuditRecord.of(event, endpoint, statusCode, true, null, attempt, attemptDurationMs));
 
+            // WebhookDeliveryResult.totalDuration() is documented as the total time across
+            // all attempts, so it's measured from the overall start passed in from send(),
+            // not just this (possibly retried) attempt's own duration.
             return WebhookDeliveryResult.success(
-                    event.eventId(), endpoint.id(), statusCode, attempt, Duration.ofMillis(durationMs));
+                    event.eventId(), endpoint.id(), statusCode, attempt, Duration.between(overallStart, now));
 
         } catch (WebhookDeliveryException e) {
             long durationMs = Duration.between(start, Instant.now()).toMillis();
@@ -189,7 +207,8 @@ public class WebhookHttpSender {
                 .slidingWindowSize(cfg.getSlidingWindowSize())
                 .waitDurationInOpenState(cfg.getWaitDurationInOpenState())
                 .permittedNumberOfCallsInHalfOpenState(cfg.getPermittedCallsInHalfOpenState())
-                .recordException(e -> !(e instanceof WebhookDeliveryException.NonRetryable))
+                .recordException(e -> !(e instanceof WebhookDeliveryException.NonRetryable)
+                        && !(e instanceof WebhookRateLimitedException))
                 .build();
         return CircuitBreakerRegistry.of(config);
     }
