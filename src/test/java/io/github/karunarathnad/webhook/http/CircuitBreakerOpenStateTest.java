@@ -24,13 +24,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * The base test config keeps {@code minimum-number-of-calls} high (100) so the circuit
  * stays closed in unrelated tests. This class lowers it just enough to force the OPEN
- * state deterministically within a handful of calls.
+ * state deterministically within a handful of calls, and disables retries so each
+ * {@code send()} call maps to exactly one HTTP request against WireMock.
  */
 @SpringBootTest(classes = WebhookTestApplication.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @TestPropertySource(properties = {
         "webhook.circuit-breaker.minimum-number-of-calls=4",
-        "webhook.circuit-breaker.sliding-window-size=4"
+        "webhook.circuit-breaker.sliding-window-size=4",
+        "webhook.retry.max-attempts=1"
 })
 class CircuitBreakerOpenStateTest {
 
@@ -118,6 +120,34 @@ class CircuitBreakerOpenStateTest {
         // NonRetryable 4xx failures aren't counted by the circuit breaker, so every
         // call should still reach the endpoint instead of being short-circuited.
         int requests = wireMock.findAll(postRequestedFor(urlEqualTo("/hooks/unauthorized"))).size();
+        assertThat(requests).isEqualTo(6);
+    }
+
+    @Test
+    void rateLimitedResponsesAloneDoNotOpenTheCircuit() {
+        wireMock.stubFor(post(urlEqualTo("/hooks/rate-limited"))
+                .willReturn(aResponse().withStatus(429).withHeader("Retry-After", "0")));
+
+        WebhookEndpoint endpoint = WebhookEndpoint.builder()
+                .id("rate-limited-endpoint")
+                .targetUrl("http://localhost:" + wireMock.port() + "/hooks/rate-limited")
+                .secret("secret")
+                .build();
+
+        WebhookEvent event = WebhookEvent.builder()
+                .eventType("test.event")
+                .payload(Map.of())
+                .build();
+
+        for (int i = 0; i < 6; i++) {
+            WebhookDeliveryResult result = webhookClient.send(event, endpoint);
+            assertThat(result.success()).isFalse();
+        }
+
+        // 429s aren't counted by the circuit breaker (they're a capacity signal from the
+        // endpoint, not a health signal), so every send should still reach the endpoint
+        // instead of being short-circuited once the sliding window fills up.
+        int requests = wireMock.findAll(postRequestedFor(urlEqualTo("/hooks/rate-limited"))).size();
         assertThat(requests).isEqualTo(6);
     }
 }
