@@ -163,6 +163,8 @@ Headers are passed through to the consumer as-is. The following headers are mana
 
 When a 429 response includes a `Retry-After` header (seconds or HTTP-date), the retry waits at least that long, capped at `webhook.retry.max-interval`.
 
+The library disables Apache HttpClient5's own built-in automatic retries (it retries 429/503 responses by default). Without that, HttpClient5 would silently re-send a request on top of the retry above, doubling HTTP round trips and double-applying the `Retry-After` wait — every retry decision for a webhook delivery is made by the single policy described above, nowhere else.
+
 ---
 
 ## Secret management
@@ -242,6 +244,8 @@ webhook:
     queue-capacity: 1000  # events waiting for a thread; rejected when full. default 1000
     keep-alive: 60s       # default 60s
 ```
+
+If `queue-capacity` is exceeded, the event is dropped without ever reaching the network: `sendAsync`/`send` still return normally with a failure `WebhookDeliveryResult` (`errorMessage` contains `"queue full"`, `totalAttempts` is `0`), and `WebhookDeliveryListener.onPermanentFailure` is invoked as usual — the same as any other permanent failure. Neither method ever throws for this or any other delivery outcome.
 
 ---
 
