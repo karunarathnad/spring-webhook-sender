@@ -34,6 +34,14 @@ POST /orders
 The **analytics endpoint** only subscribes to `order.created`, so update and
 cancel events are automatically skipped — no code needed on your side.
 
+The analytics endpoint's `webhookClient.sendAsync(...)` calls (see `OrderService`) go
+through the async dispatcher's thread pool, sized here by `webhook.async.*` in
+`application.yml` (`queue-capacity: 500`). If that queue were ever exceeded, the event
+would be dropped without an HTTP call — `sendAsync` still resolves normally to a
+failure `WebhookDeliveryResult` (never throws), and `OrderDeliveryListener.onPermanentFailure`
+would log it like any other permanent failure. See the main README's
+[Configuration](../README.md#configuration) section for details.
+
 ## Prerequisites
 
 - Java 21+
@@ -71,6 +79,12 @@ that value (or send a request with a tampered signature) and the receiver respon
 silently accepting it. The unsigned analytics endpoint has no signature header at all,
 so the receiver skips verification for it, as documented in the main
 [README's signature section](../README.md#verifying-the-signature-on-the-receiving-side).
+
+Retries in this example (and in the library generally) are governed entirely by the
+`webhook.retry`/`webhook.circuit-breaker` settings in `application.yml` — the library
+disables Apache HttpClient5's own built-in automatic retries so nothing retries a
+request behind your back. See the main README's
+[Retry behaviour](../README.md#retry-behaviour) section for the full policy.
 
 ### 2 — Update order status (triggers `order.updated`, analytics endpoint skips it)
 
