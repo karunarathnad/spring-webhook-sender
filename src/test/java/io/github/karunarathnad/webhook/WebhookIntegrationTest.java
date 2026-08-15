@@ -130,7 +130,7 @@ class WebhookIntegrationTest {
     void serverErrorIsRetriedUpToMaxAttempts() {
         wireMock.stubFor(post(urlEqualTo("/hooks/flaky"))
                 .willReturn(aResponse().withStatus(503)));
-        
+
         // Reset request recording after stub setup
         wireMock.resetRequests();
 

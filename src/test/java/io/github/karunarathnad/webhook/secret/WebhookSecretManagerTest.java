@@ -40,7 +40,7 @@ class WebhookSecretManagerTest {
         assertThat(rotated.targetUrl()).isEqualTo(original.targetUrl());
         assertThat(rotated.subscribedEventTypes()).isEqualTo(original.subscribedEventTypes());
 
-         assertThat(rotated.headers()).isEqualTo(original.headers());
+        assertThat(rotated.headers()).isEqualTo(original.headers());
         assertThat(rotated.headers().get("X-Api-Key")).isEqualTo("key-123");
         assertThat(rotated.headers().get("X-Tenant-Id")).isEqualTo("tenant-abc");
 
