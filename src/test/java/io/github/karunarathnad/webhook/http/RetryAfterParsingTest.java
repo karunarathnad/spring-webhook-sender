@@ -37,6 +37,11 @@ class RetryAfterParsingTest {
     }
 
     @Test
+    void negativeNumericHeaderIsClampedToZero() {
+        assertThat(WebhookHttpSender.parseRetryAfter("-5")).isZero();
+    }
+
+    @Test
     void httpDateInTheFutureIsConvertedToRemainingMillis() {
         Instant retryAt = Instant.now().plusSeconds(10).truncatedTo(ChronoUnit.SECONDS);
         String header = DateTimeFormatter.RFC_1123_DATE_TIME.format(retryAt.atZone(ZoneOffset.UTC));

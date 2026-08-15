@@ -41,5 +41,15 @@ class ExceptionHandlingTest {
         WebhookRateLimitedException ex = new WebhookRateLimitedException(5000);
         assertThat(ex.getRetryAfterMs()).isEqualTo(5000);
     }
+
+    @Test
+    void webhookDeliveryExceptionWithStatusAndCause() {
+        RuntimeException cause = new RuntimeException("Connection reset");
+        WebhookDeliveryException ex = new WebhookDeliveryException("Server error 503", 503, cause);
+
+        assertThat(ex.getHttpStatus()).isEqualTo(503);
+        assertThat(ex.getMessage()).isEqualTo("Server error 503");
+        assertThat(ex.getCause()).isEqualTo(cause);
+    }
 }
 

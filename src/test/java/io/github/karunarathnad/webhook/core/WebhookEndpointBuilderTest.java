@@ -12,7 +12,7 @@ class WebhookEndpointBuilderTest {
 
     @Test
     void subscribedEventTypesReplacePreviouslyAddedTypes() {
-         WebhookEndpoint endpoint = WebhookEndpoint.builder()
+        WebhookEndpoint endpoint = WebhookEndpoint.builder()
                 .id("test")
                 .targetUrl("https://example.com")
                 .subscribedEventType("order.created")
@@ -123,5 +123,41 @@ class WebhookEndpointBuilderTest {
         assertThatThrownBy(() -> new WebhookEndpoint(
                 "test", "https://example.com", null, Set.of(), Map.of("Content-Type", "text/plain")))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void buildRequiresId() {
+        WebhookEndpoint.Builder builder = WebhookEndpoint.builder()
+                .targetUrl("https://example.com");
+
+        assertThatThrownBy(builder::build).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void buildRequiresTargetUrl() {
+        WebhookEndpoint.Builder builder = WebhookEndpoint.builder()
+                .id("test");
+
+        assertThatThrownBy(builder::build).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void headerRejectsNullKey() {
+        WebhookEndpoint.Builder builder = WebhookEndpoint.builder()
+                .id("test")
+                .targetUrl("https://example.com");
+
+        assertThatThrownBy(() -> builder.header(null, "value"))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void headerRejectsNullValue() {
+        WebhookEndpoint.Builder builder = WebhookEndpoint.builder()
+                .id("test")
+                .targetUrl("https://example.com");
+
+        assertThatThrownBy(() -> builder.header("X-Custom", null))
+                .isInstanceOf(NullPointerException.class);
     }
 }
