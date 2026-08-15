@@ -52,7 +52,7 @@ public class DefaultWebhookSecretManager implements WebhookSecretManager {
                 .targetUrl(endpoint.targetUrl())
                 .subscribedEventTypes(endpoint.subscribedEventTypes())
                 .secret(generateSecret());
-        
+
         // Copy custom headers from the original endpoint
         for (var entry : endpoint.headers().entrySet()) {
             builder = builder.header(entry.getKey(), entry.getValue());

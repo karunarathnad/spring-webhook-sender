@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class HmacSha256SignatureStrategyTest {
 
-    private final io.github.karunarathnad.webhook.signature.HmacSha256SignatureStrategy strategy = new HmacSha256SignatureStrategy();
+    private final HmacSha256SignatureStrategy strategy = new HmacSha256SignatureStrategy();
 
     @Test
     void signProducesSha256PrefixedHexString() {

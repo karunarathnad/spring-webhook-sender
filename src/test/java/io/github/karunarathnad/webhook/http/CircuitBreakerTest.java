@@ -70,7 +70,7 @@ class CircuitBreakerTest {
                 .build();
 
         for (int i = 0; i < 3; i++) {
-            WebhookDeliveryResult result = webhookClient.send(event, failingEndpoint);
+            webhookClient.send(event, failingEndpoint);
         }
 
         WebhookDeliveryResult result = webhookClient.send(event, healthyEndpoint);
