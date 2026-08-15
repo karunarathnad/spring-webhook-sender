@@ -4,6 +4,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
 
+/**
+ * Binds the {@code webhook.*} configuration properties documented in the library's
+ * README, with sensible defaults so every property is optional.
+ *
+ * @see io.github.karunarathnad.webhook.autoconfigure.WebhookAutoConfiguration
+ */
 @ConfigurationProperties(prefix = "webhook")
 public class WebhookProperties {
 
@@ -20,6 +26,7 @@ public class WebhookProperties {
     public int getMaxPayloadSizeBytes() { return maxPayloadSizeBytes; }
     public void setMaxPayloadSizeBytes(int maxPayloadSizeBytes) { this.maxPayloadSizeBytes = maxPayloadSizeBytes; }
 
+    /** Settings for the {@code webhook.async.*} thread pool backing {@code sendAsync}. */
     public static class Async {
         private int corePoolSize = 4;
         private int maxPoolSize = 16;
@@ -39,6 +46,7 @@ public class WebhookProperties {
         public void setKeepAlive(Duration keepAlive) { this.keepAlive = keepAlive; }
     }
 
+    /** Settings for the {@code webhook.retry.*} exponential-backoff retry policy. */
     public static class Retry {
         // includes the first attempt, so 3 = 1 original + 2 retries
         private int maxAttempts = 3;
@@ -59,6 +67,7 @@ public class WebhookProperties {
         public void setMaxInterval(Duration maxInterval) { this.maxInterval = maxInterval; }
     }
 
+    /** Settings for the {@code webhook.circuit-breaker.*} per-endpoint circuit breaker. */
     public static class CircuitBreaker {
         private float failureRateThreshold = 50;
         private int minimumNumberOfCalls = 10;
@@ -82,6 +91,7 @@ public class WebhookProperties {
         public void setPermittedCallsInHalfOpenState(int permittedCallsInHalfOpenState) { this.permittedCallsInHalfOpenState = permittedCallsInHalfOpenState; }
     }
 
+    /** Settings for the {@code webhook.http.*} outgoing HTTP client timeouts. */
     public static class Http {
         private Duration connectTimeout = Duration.ofSeconds(5);
         private Duration readTimeout = Duration.ofSeconds(10);

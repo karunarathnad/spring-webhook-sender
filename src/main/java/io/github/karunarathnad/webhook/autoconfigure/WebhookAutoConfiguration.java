@@ -26,6 +26,15 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.client.RestClient;
 
+/**
+ * Spring Boot auto-configuration that wires up the whole webhook-sending stack:
+ * signing, HTTP client, retry/circuit-breaker registries, async dispatch, audit
+ * logging, and the public {@link WebhookClient} bean.
+ *
+ * <p>Every bean is {@code @ConditionalOnMissingBean}, so applications can override any
+ * single collaborator (for example a custom {@link SignatureStrategy} or
+ * {@code webhookObjectMapper}) without having to redefine the rest of the stack.
+ */
 @AutoConfiguration
 @EnableConfigurationProperties(WebhookProperties.class)
 public class WebhookAutoConfiguration {

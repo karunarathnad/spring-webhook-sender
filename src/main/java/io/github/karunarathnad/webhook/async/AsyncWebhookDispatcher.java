@@ -13,6 +13,16 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 
+/**
+ * Submits webhook deliveries to a dedicated {@link ThreadPoolTaskExecutor} so callers of
+ * {@link io.github.karunarathnad.webhook.core.WebhookClient#sendAsync} never block on
+ * network I/O.
+ *
+ * <p>If the executor's queue is full, the event is dropped without an HTTP call: rather
+ * than propagating a {@link RejectedExecutionException}, {@link #dispatch} resolves to a
+ * failure {@link WebhookDeliveryResult} and notifies the {@link WebhookDeliveryListener},
+ * consistent with the library's contract that dispatch methods never throw.
+ */
 public class AsyncWebhookDispatcher {
 
     private static final Logger log = LoggerFactory.getLogger(AsyncWebhookDispatcher.class);

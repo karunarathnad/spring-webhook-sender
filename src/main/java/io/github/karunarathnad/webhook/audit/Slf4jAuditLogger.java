@@ -3,6 +3,13 @@ package io.github.karunarathnad.webhook.audit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Default {@link AuditLogger} registered by the library's auto-configuration.
+ *
+ * <p>Writes one structured log line per delivery attempt to the {@code webhook.audit}
+ * SLF4J logger — {@code INFO} on success, {@code WARN} on failure. Override the
+ * {@code webhookAuditLogger} bean to persist records elsewhere instead.
+ */
 public class Slf4jAuditLogger implements AuditLogger {
 
     private static final Logger log = LoggerFactory.getLogger("webhook.audit");

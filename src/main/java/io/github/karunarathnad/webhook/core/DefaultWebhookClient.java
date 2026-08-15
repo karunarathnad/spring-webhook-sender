@@ -7,6 +7,15 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Default {@link WebhookClient} implementation registered by the library's
+ * auto-configuration.
+ *
+ * <p>Before dispatching, checks the endpoint's {@code subscribedEventTypes} and
+ * short-circuits to a {@link WebhookDeliveryResult#skipped skipped} result without
+ * making an HTTP call when the event type is not subscribed. Otherwise delegates to
+ * {@link AsyncWebhookDispatcher} for signing, retry, and circuit-breaker handling.
+ */
 public class DefaultWebhookClient implements WebhookClient {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultWebhookClient.class);

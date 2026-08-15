@@ -34,6 +34,20 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Performs the actual HTTP delivery of a single {@link WebhookEvent} to a
+ * {@link WebhookEndpoint}, wrapped in per-endpoint Resilience4j retry and circuit-breaker
+ * decorators.
+ *
+ * <p>Handles payload serialisation and size validation, HMAC signing, custom header
+ * propagation, HTTP 429/{@code Retry-After} handling, per-attempt audit logging, and
+ * final {@link WebhookDeliveryListener} notification. Retry and circuit-breaker
+ * registries are keyed by {@link WebhookEndpoint#id()}, so state for one endpoint never
+ * affects another.
+ *
+ * <p>{@link #send} never throws — every outcome, including exhausted retries and
+ * open-circuit rejections, resolves to a {@link WebhookDeliveryResult}.
+ */
 public class WebhookHttpSender {
 
     private static final Logger log = LoggerFactory.getLogger(WebhookHttpSender.class);
@@ -189,7 +203,7 @@ public class WebhookHttpSender {
     static long parseRetryAfter(String header) {
         if (header == null || header.isBlank()) return 0;
         try {
-            return Long.parseLong(header.trim()) * 1000L;
+            return Math.max(0, Long.parseLong(header.trim())) * 1000L;
         } catch (NumberFormatException e) {
             try {
                 Instant retryAt = Instant.from(DateTimeFormatter.RFC_1123_DATE_TIME.parse(header.trim()));
