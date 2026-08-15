@@ -3,6 +3,7 @@ package io.github.karunarathnad.webhook.example.controller;
 import io.github.karunarathnad.webhook.example.model.CreateOrderRequest;
 import io.github.karunarathnad.webhook.example.model.Order;
 import io.github.karunarathnad.webhook.example.service.OrderService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +19,7 @@ public class OrderController {
 
     /** Create an order — fires an order.created webhook to both endpoints. */
     @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody CreateOrderRequest request) {
+    public ResponseEntity<Order> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         Order order = orderService.createOrder(request.customerId(), request.product(), request.amount());
         return ResponseEntity.ok(order);
     }
@@ -28,6 +29,9 @@ public class OrderController {
     public ResponseEntity<Order> updateStatus(
             @PathVariable String orderId,
             @RequestParam String status) {
+        if (status.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
         Order order = orderService.updateOrderStatus(orderId, status);
         return ResponseEntity.ok(order);
     }

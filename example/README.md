@@ -54,6 +54,14 @@ cd example
 mvn spring-boot:run
 ```
 
+Run the example's own tests (including `WebhookReceiverControllerTest`, which covers
+signed, tampered, and unsigned requests) with:
+
+```bash
+cd example
+mvn test
+```
+
 ## Try it out
 
 ### 1 — Create an order (triggers `order.created`)
@@ -102,6 +110,18 @@ curl -s -X DELETE http://localhost:8080/orders/ORD-001
 
 Both async sends fire; the analytics endpoint skips because it only subscribes
 to `order.created`.
+
+### 4 — Send a tampered signature directly to the receiver
+
+```bash
+curl -s -i -X POST http://localhost:8080/receive/webhooks \
+  -H "Content-Type: application/json" \
+  -H "X-Webhook-Signature: sha256=0000000000000000000000000000000000000000000000000000000000000000" \
+  -d '{"eventType":"order.created"}'
+```
+
+The receiver recomputes the HMAC over the body, finds it doesn't match, logs
+`Signature mismatch — rejecting request`, and responds `401 Unauthorized`.
 
 ## Key code snippets
 
