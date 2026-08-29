@@ -13,6 +13,12 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Simulates order-management operations, firing a webhook to both the
+ * primary and analytics endpoints on every state change. See
+ * {@link io.github.karunarathnad.webhook.example.config.WebhookConfig}
+ * for how those endpoints are configured.
+ */
 @Service
 public class OrderService {
 
@@ -30,6 +36,10 @@ public class OrderService {
         this.analyticsEndpoint = analyticsEndpoint;
     }
 
+    /**
+     * Creates an order and fires an {@code order.created} webhook: a blocking send
+     * to the primary endpoint followed by a non-blocking send to the analytics endpoint.
+     */
     public Order createOrder(String customerId, String product, BigDecimal amount) {
         Order order = new Order(UUID.randomUUID().toString(), customerId, product, amount, "CREATED");
 
@@ -58,6 +68,10 @@ public class OrderService {
         return order;
     }
 
+    /**
+     * Updates an order's status and fires an {@code order.updated} webhook to both
+     * endpoints; the analytics endpoint skips it since it only subscribes to {@code order.created}.
+     */
     public Order updateOrderStatus(String orderId, String newStatus) {
         Order order = new Order(orderId, "customer-1", "Unknown", BigDecimal.ZERO, newStatus);
 
@@ -74,6 +88,10 @@ public class OrderService {
         return order;
     }
 
+    /**
+     * Cancels an order and fires an {@code order.cancelled} webhook to both
+     * endpoints; the analytics endpoint skips it since it only subscribes to {@code order.created}.
+     */
     public void cancelOrder(String orderId) {
         WebhookEvent event = WebhookEvent.builder()
                 .eventType("order.cancelled")
