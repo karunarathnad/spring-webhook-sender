@@ -21,6 +21,13 @@
 
     <properties>
         <java.version>21</java.version>
+
+        <!-- spring-boot-starter-parent 3.5.16 (EOL) still manages these at vulnerable
+             versions; override so the app doesn't resolve them transitively.
+             See ../SECURITY.md. -->
+        <httpclient5.version>5.6.3</httpclient5.version>
+        <httpcore5.version>5.4.3</httpcore5.version>
+        <jackson-bom.version>2.21.5</jackson-bom.version>
     </properties>
 
     <dependencies>
