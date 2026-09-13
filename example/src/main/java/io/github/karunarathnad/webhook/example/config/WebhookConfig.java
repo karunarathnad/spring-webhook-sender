@@ -7,6 +7,14 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.Set;
 
+/**
+ * Declares the {@link WebhookEndpoint} beans used throughout the example app.
+ *
+ * <p>Defines two endpoints that both point at the local {@code WebhookReceiverController}
+ * to illustrate two common configurations: a fully-signed endpoint subscribed to every
+ * order event, and an unsigned endpoint with a custom API key that only subscribes to a
+ * single event type.
+ */
 @Configuration
 public class WebhookConfig {
 
