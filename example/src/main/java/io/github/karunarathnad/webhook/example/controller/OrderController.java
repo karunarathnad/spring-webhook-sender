@@ -7,6 +7,14 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST endpoints for order management, demonstrating how a typical service layer
+ * triggers webhook deliveries from state-changing operations.
+ *
+ * <p>Each handler delegates to {@link OrderService}, which fires the corresponding
+ * {@code order.*} event to the primary and analytics endpoints configured in
+ * {@link io.github.karunarathnad.webhook.example.config.WebhookConfig}.
+ */
 @RestController
 @RequestMapping("/orders")
 public class OrderController {

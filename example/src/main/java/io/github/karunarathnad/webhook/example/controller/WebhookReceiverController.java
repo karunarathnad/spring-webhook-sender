@@ -33,10 +33,24 @@ public class WebhookReceiverController {
 
     private final String webhookSecret;
 
+    /**
+     * @param webhookSecret the shared HMAC secret used to verify incoming signatures;
+     *                      must match the secret configured on the sending side
+     */
     public WebhookReceiverController(@Value("${example.webhook-secret}") String webhookSecret) {
         this.webhookSecret = webhookSecret;
     }
 
+    /**
+     * Accepts an incoming webhook, logs its headers and payload, and verifies the
+     * {@code X-Webhook-Signature} header when present.
+     *
+     * @param payload the raw request body, verbatim so the signature can be recomputed
+     * @param headers the request headers, inspected for the signature and any custom
+     *                headers configured on the sending endpoint
+     * @return 200 OK if unsigned or the signature is valid; 401 Unauthorized if a
+     *         signature was supplied but does not match
+     */
     @PostMapping("/webhooks")
     public ResponseEntity<Void> receive(
             @RequestBody String payload,
