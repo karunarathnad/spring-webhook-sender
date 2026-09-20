@@ -19,7 +19,7 @@ import java.util.HexFormat;
  * In a real integration this would live in a separate service.
  *
  * The library sends signed requests with an X-Webhook-Signature header
- * in the format: sha256=<hex-digest>. This controller verifies that signature
+ * in the format: {@code sha256=<hex-digest>}. This controller verifies that signature
  * using the same shared secret configured on the sending side (see WebhookConfig),
  * following the approach documented in the library's README under
  * "Verifying the signature on the receiving side".
@@ -34,6 +34,8 @@ public class WebhookReceiverController {
     private final String webhookSecret;
 
     /**
+     * Creates the controller with the shared secret used to verify incoming signatures.
+     *
      * @param webhookSecret the shared HMAC secret used to verify incoming signatures;
      *                      must match the secret configured on the sending side
      */

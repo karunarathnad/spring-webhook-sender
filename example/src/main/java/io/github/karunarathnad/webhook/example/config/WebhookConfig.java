@@ -22,6 +22,9 @@ public class WebhookConfig {
      * Primary endpoint — receives all order events, signed with HMAC-SHA256.
      * The receiver validates the X-Webhook-Signature header on the other side using the
      * same {@code example.webhook-secret} property (see WebhookReceiverController).
+     *
+     * @param webhookSecret the shared HMAC secret used to sign outgoing requests
+     * @return the configured primary endpoint
      */
     @Bean
     public WebhookEndpoint primaryEndpoint(@Value("${example.webhook-secret}") String webhookSecret) {
@@ -36,6 +39,8 @@ public class WebhookConfig {
     /**
      * Analytics endpoint — only subscribes to order.created events and passes
      * a custom API key header required by the downstream analytics service.
+     *
+     * @return the configured analytics endpoint
      */
     @Bean
     public WebhookEndpoint analyticsEndpoint() {

@@ -21,18 +21,34 @@ public class OrderController {
 
     private final OrderService orderService;
 
+    /**
+     * Creates the controller with the service that fires order webhooks.
+     *
+     * @param orderService the service used to create, update, and cancel orders
+     */
     public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
 
-    /** Create an order — fires an order.created webhook to both endpoints. */
+    /**
+     * Create an order — fires an order.created webhook to both endpoints.
+     *
+     * @param request the order details to create
+     * @return the created order
+     */
     @PostMapping
     public ResponseEntity<Order> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         Order order = orderService.createOrder(request.customerId(), request.product(), request.amount());
         return ResponseEntity.ok(order);
     }
 
-    /** Update order status — fires an order.updated webhook (analytics endpoint skips it). */
+    /**
+     * Update order status — fires an order.updated webhook (analytics endpoint skips it).
+     *
+     * @param orderId the id of the order to update
+     * @param status  the new status to apply
+     * @return the updated order, or 400 Bad Request if {@code status} is blank
+     */
     @PutMapping("/{orderId}/status")
     public ResponseEntity<Order> updateStatus(
             @PathVariable String orderId,
@@ -44,7 +60,12 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
-    /** Cancel an order — fires an order.cancelled webhook (analytics endpoint skips it). */
+    /**
+     * Cancel an order — fires an order.cancelled webhook (analytics endpoint skips it).
+     *
+     * @param orderId the id of the order to cancel
+     * @return 204 No Content
+     */
     @DeleteMapping("/{orderId}")
     public ResponseEntity<Void> cancelOrder(@PathVariable String orderId) {
         orderService.cancelOrder(orderId);

@@ -28,6 +28,13 @@ public class OrderService {
     private final WebhookEndpoint primaryEndpoint;
     private final WebhookEndpoint analyticsEndpoint;
 
+    /**
+     * Creates the service with the client and endpoints used to fire order webhooks.
+     *
+     * @param webhookClient     the client used to send webhook events
+     * @param primaryEndpoint   the primary endpoint, sent to on every order state change
+     * @param analyticsEndpoint the analytics endpoint, subscribed only to {@code order.created}
+     */
     public OrderService(WebhookClient webhookClient,
                         WebhookEndpoint primaryEndpoint,
                         WebhookEndpoint analyticsEndpoint) {
@@ -39,6 +46,11 @@ public class OrderService {
     /**
      * Creates an order and fires an {@code order.created} webhook: a blocking send
      * to the primary endpoint followed by a non-blocking send to the analytics endpoint.
+     *
+     * @param customerId the id of the customer placing the order
+     * @param product    the product being ordered
+     * @param amount     the order amount
+     * @return the created order
      */
     public Order createOrder(String customerId, String product, BigDecimal amount) {
         Order order = new Order(UUID.randomUUID().toString(), customerId, product, amount, "CREATED");
@@ -71,6 +83,10 @@ public class OrderService {
     /**
      * Updates an order's status and fires an {@code order.updated} webhook to both
      * endpoints; the analytics endpoint skips it since it only subscribes to {@code order.created}.
+     *
+     * @param orderId   the id of the order to update
+     * @param newStatus the new status to apply
+     * @return the updated order
      */
     public Order updateOrderStatus(String orderId, String newStatus) {
         Order order = new Order(orderId, "customer-1", "Unknown", BigDecimal.ZERO, newStatus);
@@ -91,6 +107,8 @@ public class OrderService {
     /**
      * Cancels an order and fires an {@code order.cancelled} webhook to both
      * endpoints; the analytics endpoint skips it since it only subscribes to {@code order.created}.
+     *
+     * @param orderId the id of the order to cancel
      */
     public void cancelOrder(String orderId) {
         WebhookEvent event = WebhookEvent.builder()
