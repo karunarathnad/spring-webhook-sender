@@ -34,16 +34,18 @@ class OrderServiceTest {
     private WebhookEndpoint analyticsEndpoint;
     private OrderService orderService;
 
+    private static final String WEBHOOK_URL = "http://localhost:8080/receive/webhooks";
+
     @BeforeEach
     void setUp() {
         primaryEndpoint = WebhookEndpoint.builder()
                 .id("primary-endpoint")
-                .targetUrl("http://localhost:8080/receive/webhooks")
+                .targetUrl(WEBHOOK_URL)
                 .subscribedEventTypes(Set.of("order.created", "order.updated", "order.cancelled"))
                 .build();
         analyticsEndpoint = WebhookEndpoint.builder()
                 .id("analytics-endpoint")
-                .targetUrl("http://localhost:8080/receive/webhooks")
+                .targetUrl(WEBHOOK_URL)
                 .subscribedEventTypes(Set.of("order.created"))
                 .build();
         orderService = new OrderService(webhookClient, primaryEndpoint, analyticsEndpoint);
